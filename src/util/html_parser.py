@@ -9,11 +9,7 @@ def parse_instructor_summary(text: str):
     try:
         # NOTE: there is probably a better way to write this
         comments = find_student_comments(soup, parse_new_report, parse_old_report)
-
         review_map["comments"] = comments
-
-        # print(",\n".join(comments))
-
     except:
         review_map["comments"] = []
         print("Could not find data")

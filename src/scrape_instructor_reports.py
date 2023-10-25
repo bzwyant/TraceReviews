@@ -9,6 +9,7 @@ import requests
 from util.html_parser import parse_instructor_summary
 from util.mongo_tools import create_async_client, get_course_info_batch
 import json
+from math import floor
 
 
 # print(response.text)
@@ -31,25 +32,25 @@ async def main():
     # course_id = 84119
     # instructor_id = 6939
     # term_id = 168
-    url = lambda course_id, instructor_id, term_id: f"https://www.applyweb.com/eval/new/showreport?c={course_id}&i={instructor_id}&t={term_id}&r=10&d=true"
+    instructor_report_url = lambda course_id, instructor_id, term_id: f"https://www.applyweb.com/eval/new/showreport?c={course_id}&i={instructor_id}&t={term_id}&r=10&d=true"
 
     payload = {}
     headers = {
-    'authority': 'www.applyweb.com',
-    'accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7',
-    'accept-language': 'en-US,en;q=0.9',
-    'cache-control': 'no-cache',
-    'cookie': COOKIE,
-    'pragma': 'no-cache',
-    'referer': 'https://www.applyweb.com/eval/new/coursereport?sp=84144&sp=6719&sp=168',
-    'sec-ch-ua': '"Google Chrome";v="117", "Not;A=Brand";v="8", "Chromium";v="117"',
-    'sec-ch-ua-mobile': '?0',
-    'sec-ch-ua-platform': '"macOS"',
-    'sec-fetch-dest': 'iframe',
-    'sec-fetch-mode': 'navigate',
-    'sec-fetch-site': 'same-origin',
-    'upgrade-insecure-requests': '1',
-    'user-agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/117.0.0.0 Safari/537.36'
+        'authority': 'www.applyweb.com',
+        # 'accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7',
+        # 'accept-language': 'en-US,en;q=0.9',
+        # 'cache-control': 'no-cache',
+        'cookie': COOKIE,
+        # 'pragma': 'no-cache',
+        # 'referer': 'https://www.applyweb.com/eval/new/coursereport?sp=84144&sp=6719&sp=168',
+        # 'sec-ch-ua': '"Google Chrome";v="117", "Not;A=Brand";v="8", "Chromium";v="117"',
+        # 'sec-ch-ua-mobile': '?0',
+        # 'sec-ch-ua-platform': '"macOS"',
+        # 'sec-fetch-dest': 'iframe',
+        # 'sec-fetch-mode': 'navigate',
+        # 'sec-fetch-site': 'same-origin',
+        # 'upgrade-insecure-requests': '1',
+        'user-agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/117.0.0.0 Safari/537.36'
     }
 
     # DB info
@@ -64,12 +65,13 @@ async def main():
         batch_limit = 10
         batch_size = 20
 
-        #NOTE: @myself get_course_info_batch is a GENERATOR (so you loop through it)
+        #NOTE: Not sure this needs to be async but can just switch to using create_client to make it not async retrieval
+        #NOTE: @myself get_course_info_batch is a GENERATOR (so you loop through it) 
         async for course_info_batch in get_course_info_batch(mongo_client, database, collection, batch_size):
             tasks = []
             # print(json.dumps(batch, indent=2), '\n')
             for course_info in course_info_batch:
-                course_url = url(course_info['courseId'], course_info['instructorId'], course_info['termId'])
+                course_url = instructor_report_url(course_info['courseId'], course_info['instructorId'], course_info['termId'])
                 tasks.append(asyncio.ensure_future(get_instructor_comments(client, course_url, headers)))
 
             batch_comments = await asyncio.gather(*tasks)
@@ -89,5 +91,6 @@ if __name__ == "__main__":
     asyncio.run(main())
     stop = time()
 
-    print("time:",  (stop - start), "seconds")
+    seconds_elapsed = stop - start
+    print(f"time: {floor(seconds_elapsed / 60)} min {round(seconds_elapsed // 60)}s")
     
