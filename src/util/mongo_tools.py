@@ -10,10 +10,16 @@ import json
 def create_client(uri) -> MongoClient:
     return MongoClient(uri, server_api=ServerApi('1'))
 
-def get_course_info_batch(client: MongoClient, database_name: str, collection_name: str, batch_size: int):
-    db = client[database_name]
-    collection = db[collection_name]
 
+def create_async_client(uri) -> AsyncIOMotorClient:
+    return AsyncIOMotorClient(uri)
+
+
+def get_collection(client, database: str, collection: str) -> Collection:
+    return client[database][collection]
+
+
+def get_course_info_batch(collection: Collection, batch_size: int):
     last_id_seen = 0
 
     while last_id_seen != -1:
@@ -32,13 +38,8 @@ def get_course_info_batch(client: MongoClient, database_name: str, collection_na
 
         yield result
 
-def create_async_client(uri) -> AsyncIOMotorClient:
-    return AsyncIOMotorClient(uri)
 
-async def get_course_info_batch(client: AsyncIOMotorClient, database_name: str, collection_name: str, batch_size: int):
-    db = client[database_name]
-    collection = db[collection_name]
-
+async def aget_course_info_batch(collection: Collection, batch_size: int):
     last_id_seen = 0
 
     while last_id_seen != -1:
@@ -48,10 +49,10 @@ async def get_course_info_batch(client: AsyncIOMotorClient, database_name: str, 
         if not result:
             return
         
-        for doc in result:
-            print(doc)
+        # for doc in result:
+        #     print(doc)
 
-        exit()
+        # exit()
 
         # Convert ObjectId values to strings in the result
         for doc in result:

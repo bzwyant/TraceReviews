@@ -7,7 +7,7 @@ from dotenv import load_dotenv
 import os
 import requests
 from util.html_parser import parse_instructor_summary
-from util.mongo_tools import create_async_client, get_course_info_batch
+from util.mongo_tools import create_client, create_async_client, aget_course_info_batch, get_collection
 import json
 from math import floor
 
@@ -15,9 +15,9 @@ from math import floor
 # print(response.text)
 
 
-async def get_instructor_comments(client, url, headers):
+async def get_instructor_comments(client: httpx.AsyncClient, url, headers):
     # async with client:
-    r = await client.get(url=url, headers=headers)
+    r = await client.get(url=url, headers=headers, timeout=30.0)
     # print(r.text)
     # print(r.status_code)
     instructor_comments = parse_instructor_summary(r.text)
@@ -56,18 +56,20 @@ async def main():
     # DB info
     atlas_password = os.getenv('ATLAS_PASSWORD')
     uri = f"mongodb+srv://bwyant:{atlas_password}@trace.gqna2hn.mongodb.net/?retryWrites=true&w=majority"
-    database = 'reports'
-    collection = 'courseInfo'
+    database_name = 'reports'
+    collection_name = 'courseInfo'
 
     mongo_client = create_async_client(uri=uri)
+    # mongo_client = create_client(uri=uri)
+    collection = get_collection(client=mongo_client, database=database_name, collection=collection_name)
 
     async with httpx.AsyncClient() as client:
         batch_limit = 10
-        batch_size = 20
+        batch_size = 250
 
         #NOTE: Not sure this needs to be async but can just switch to using create_client to make it not async retrieval
         #NOTE: @myself get_course_info_batch is a GENERATOR (so you loop through it) 
-        async for course_info_batch in get_course_info_batch(mongo_client, database, collection, batch_size):
+        async for course_info_batch in aget_course_info_batch(collection, batch_size):
             tasks = []
             # print(json.dumps(batch, indent=2), '\n')
             for course_info in course_info_batch:
@@ -75,22 +77,24 @@ async def main():
                 tasks.append(asyncio.ensure_future(get_instructor_comments(client, course_url, headers)))
 
             batch_comments = await asyncio.gather(*tasks)
+
             for review in batch_comments:
-                # print(review["comments"])
-                print(review["professor"])
+                pass
+                # TODO: Stream to database here
 
             batch_limit -= 1
             if batch_limit == 0:
                 break
+
+    return 10 * batch_size
 
     # asyncio.run(get_instructor_comments(url, headers))
 
 
 if __name__ == "__main__":
     start = time()
-    asyncio.run(main())
+    scraped_count = asyncio.run(main())
     stop = time()
 
     seconds_elapsed = stop - start
-    print(f"time: {floor(seconds_elapsed / 60)} min {round(seconds_elapsed // 60)}s")
-    
+    print(f"{seconds_elapsed} seconds to scrape {scraped_count} reviews")

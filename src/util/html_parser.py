@@ -10,9 +10,9 @@ def parse_instructor_summary(text: str):
         # NOTE: there is probably a better way to write this
         comments = find_student_comments(soup, parse_new_report, parse_old_report)
         review_map["comments"] = comments
-    except:
+    except LookupError:
         review_map["comments"] = []
-        print("Could not find data")
+        # print("Could not find data")
 
     return review_map
 
@@ -26,8 +26,8 @@ def find_student_comments(soup: BeautifulSoup, *parse_functions) -> list:
         except:
             continue
 
-    print("Found a new instructor report type")
-    return comments
+    # NOTE: If we got here I'm pretty confident there were no comments
+    raise LookupError
 
 
 def parse_new_report(soup: BeautifulSoup):
@@ -47,9 +47,6 @@ def parse_new_report(soup: BeautifulSoup):
 
 
 def parse_old_report(soup: BeautifulSoup):
-    prof = soup.find('div', id="chart_3").find('h4').get_text()
-    prof = prof.rsplit(':', 1)[1].strip()
-
     comments = []
     general_comments_div = soup.find('div', id="cat_15")
 
