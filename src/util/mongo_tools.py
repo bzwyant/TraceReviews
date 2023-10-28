@@ -15,7 +15,7 @@ def create_async_client(uri) -> AsyncIOMotorClient:
     return AsyncIOMotorClient(uri)
 
 
-def get_collection(client, database: str, collection: str) -> Collection:
+def get_collection(client, database: str, collection: str):
     return client[database][collection]
 
 
@@ -48,11 +48,6 @@ async def aget_course_info_batch(collection: Collection, batch_size: int):
 
         if not result:
             return
-        
-        # for doc in result:
-        #     print(doc)
-
-        # exit()
 
         # Convert ObjectId values to strings in the result
         for doc in result:
@@ -62,3 +57,8 @@ async def aget_course_info_batch(collection: Collection, batch_size: int):
         last_id_seen = result[-1].get("courseId", -1) if result else -1
 
         yield result
+
+
+async def ainsert_many(collection, to_insert: list):
+    result = await collection.insert_many(to_insert)
+    return result

@@ -8,6 +8,6 @@ if [[ -f .env ]]; then
 fi
 
 collection="courseInfo"
-mongosh "mongodb+srv://$ATLAS_USERNAME:$ATLAS_PASSWORD@trace.gqna2hn.mongodb.net/reports?retryWrites=true&w=majority" --eval "db.$collection.deleteMany({})"
+# mongosh "$COURSE_INFO_CLIENT_URI" --eval "db.$collection.deleteMany({})"
 
-echo "Collection $collection in database $database cleared."
+# echo "Collection $collection in database $database cleared."

@@ -1,5 +1,4 @@
 from bs4 import BeautifulSoup
-# import json
 
 
 def parse_instructor_summary(text: str):
@@ -9,10 +8,11 @@ def parse_instructor_summary(text: str):
     try:
         # NOTE: there is probably a better way to write this
         comments = find_student_comments(soup, parse_new_report, parse_old_report)
+        if len(comments) > 30:
+            comments = comments[1:]
         review_map["comments"] = comments
     except LookupError:
         review_map["comments"] = []
-        # print("Could not find data")
 
     return review_map
 
